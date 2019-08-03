@@ -10,7 +10,6 @@ import (
 )
 
 type UserController struct {
-
 }
 
 var UserLogic logic.UserLogic = logic.UserLogic{}
@@ -21,11 +20,16 @@ func (u UserController) SayHello(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, result)
 }
 
-// controller -> logic -> model 连贯
-// 返回一个传统的json
-func (u UserController) GetUser(ctx echo.Context) error {
-	formId := ctx.FormValue("id")
-	id, error := strconv.Atoi(formId)
+/**
+	获取user详情
+    GET /users/:id
+	@params ctx echo.Context
+	@return json
+*/
+func (u UserController) Detail(ctx echo.Context) error {
+	// formId := ctx.FormValue("id")
+	queryId := ctx.Param("id")
+	id, error := strconv.Atoi(queryId)
 	// 处理 error
 	if error != nil {
 		log.Fatal(error)
@@ -33,8 +37,21 @@ func (u UserController) GetUser(ctx echo.Context) error {
 
 	var user *model.User = UserLogic.Detail(id)
 
-	data := make(map[int]interface{})
-	data[id] = user
-	// return ctx.String(http.StatusOK, user.Name)
+	data := make(map[int]model.User)
+	data[id] = *user
+	return ctx.JSON(http.StatusOK, data)
+}
+
+/**
+	获取user列表
+    GET /users/:id
+	@params ctx echo.Context
+	@return json
+*/
+func (u UserController) Index(ctx echo.Context) error {
+	// 验证。。
+	params := make(map[string]interface{})
+	data := UserLogic.Index(params)
+
 	return ctx.JSON(http.StatusOK, data)
 }
