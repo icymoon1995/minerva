@@ -23,11 +23,7 @@ type AuthLogic struct {
 	@return bool
 */
 func (AuthLogic) Verify(email string, password string) (bool, error) {
-	// 应该连数据库去校验用户和密码
-	//
-	if email == "superhero" && password == "superhero,too" {
-		return true, nil
-	}
+	// 数据库去校验用户和密码
 	auth := &model.Auth{}
 	exist, error := common.DB.Where("email = ?", email).Get(auth)
 	if error != nil {
@@ -43,6 +39,7 @@ func (AuthLogic) Verify(email string, password string) (bool, error) {
 		return false, errors.New("your account is not login")
 	}
 
+	// 通过hash加密作对比
 	shaPassword := fmt.Sprintf("%X", sha1.Sum([]byte(password)))
 	if shaPassword != auth.Password {
 		return false, errors.New("password is not correct")
