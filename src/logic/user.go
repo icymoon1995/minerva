@@ -15,29 +15,6 @@ type UserLogic struct {
 }
 
 /**
-	校验用户名密码
-    @param email string 邮箱
-	@param password string 密码
-	@return bool
-*/
-func (UserLogic) Verify(email string, password string) bool {
-	// 应该连数据库去校验用户和密码
-	//
-	if email == "superhero" && password == "superhero,too" {
-		return true
-	}
-	return false
-
-}
-
-/**
- *	登录
- */
-func (UserLogic) Login() {
-	// 设置cookie 、 利用 redis 存储缓存等
-}
-
-/**
  *	查询列表
  *	@params params map[string]interface{} 筛选的参数
  *	@return map[string]interface{}
@@ -54,6 +31,7 @@ func (UserLogic) Index(params map[string]interface{}) map[string]interface{} {
 	}
 
 	// 处理 params参数
+	// todo
 
 	// 取总数量 - 分页使用
 	user := &model.User{}
@@ -63,6 +41,7 @@ func (UserLogic) Index(params map[string]interface{}) map[string]interface{} {
 	offset := logic.Offset(currentPage, perPage)
 	// 查询 (结合params加where条件)
 	userList := make([]model.User, 0)
+	// problem: 如果数据数量小于 perPage。。 则会返回多余很多null。。
 	error := common.DB.Limit(perPage, offset).Find(&userList)
 
 	if error != nil {

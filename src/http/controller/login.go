@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	"github.com/spf13/viper"
@@ -15,7 +14,7 @@ import (
 type LoginController struct {
 }
 
-var userLogic logic.UserLogic = logic.UserLogic{}
+var authLogic logic.AuthLogic = logic.AuthLogic{}
 
 // jwt加密的数据结构体
 type JwtCustomClaims struct {
@@ -62,9 +61,9 @@ func (login LoginController) Login(ctx echo.Context) error {
 */
 func verify(email string, password string) error {
 	// 后续考虑第三方认证。。。。todo
-	result := userLogic.Verify(email, password)
+	result, error := authLogic.Verify(email, password)
 	if !result {
-		return errors.New("用户名或密码错误")
+		return error
 	}
 
 	return nil

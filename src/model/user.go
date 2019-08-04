@@ -7,7 +7,6 @@ type User struct {
 	Name      string
 	Avatar    string
 	Gender    int
-	Email     string
 	Birthday  time.Time `xorm:"DATE"`
 	CreatedAt time.Time `xorm:"created"`
 	UpdatedAt time.Time `xorm:"updated"`

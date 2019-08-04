@@ -27,7 +27,6 @@ func (u UserController) SayHello(ctx echo.Context) error {
 	@return json
 */
 func (u UserController) Detail(ctx echo.Context) error {
-	// formId := ctx.FormValue("id")
 	queryId := ctx.Param("id")
 	id, error := strconv.Atoi(queryId)
 	// 处理 error
@@ -44,7 +43,7 @@ func (u UserController) Detail(ctx echo.Context) error {
 
 /**
 	获取user列表
-    GET /users/:id
+    GET /users/index
 	@params ctx echo.Context
 	@return json
 */
