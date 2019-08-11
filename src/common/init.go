@@ -10,4 +10,6 @@ func Init() {
 	// 数据库连接初始化
 	dbInit()
 
+	// redis连接池初始化
+	redisPoolInit()
 }

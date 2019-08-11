@@ -10,15 +10,21 @@ import (
 // 对外提供 common.DB
 var DB *xorm.Engine
 
-func dbInit() {
+var dbPrefix string
 
+func dbPreFixInit() {
+	dbPrefix = Enviorment + ".db."
+}
+
+func dbInit() {
 	/**
 	 *	初始化 数据库连接信息
 	 */
 	var err error
 
 	// 配置前缀 未使用全局的前缀 viper.SetEnvPrefix()
-	var dbPrefix string = Enviorment + ".db."
+	//var dbPrefix string = Enviorment + ".db."
+	dbPreFixInit()
 
 	// 读取数据库连接的配置
 	var username string = viper.GetString(dbPrefix + "username")

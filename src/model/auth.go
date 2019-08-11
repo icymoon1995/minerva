@@ -3,13 +3,13 @@ package model
 import "time"
 
 type Auth struct {
-	Id        int `xorm:"pk autoincr"`
-	Email     string
-	CreatedAt time.Time `xorm:"created"`
-	UpdatedAt time.Time `xorm:"updated"`
-	Status    int       `xorm:"Int"`
-	Password  string
-	Telephone string
+	Id        int `json:"id" xorm:"pk autoincr"`
+	Email     string `json:"email"`
+	CreatedAt time.Time `json:"created_at" xorm:"created"`
+	UpdatedAt time.Time `json:"updated_at" xorm:"updated"`
+	Status    int       `json:"status" xorm:"Int"`
+	Password  string	`json:"password"`
+	Telephone string	`json:"telephone"`
 }
 
 // 账号激活

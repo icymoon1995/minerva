@@ -79,7 +79,8 @@ func generateToken(data map[string]interface{}) (string, error) {
 	// 过期时间 -- 必须转化成time.Duration格式 不然会抛异常
 	var jwtExpire string = viper.GetString(env + "jwt.expire")
 	jwtExpireInt, _ := strconv.ParseInt(jwtExpire, 10, 64)
-	var d time.Duration = time.Duration(jwtExpireInt) * time.Hour
+	// 目前单位是
+	var d time.Duration = time.Duration(jwtExpireInt) * time.Second
 
 	// 填充必要数据 目前只用了email 和 isGod
 	claims := &JwtCustomClaims{

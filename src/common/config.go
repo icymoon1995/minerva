@@ -40,6 +40,5 @@ func envInit() {
 	}
 
 	Enviorment = env
-
 	JWTKey = viper.GetString(Enviorment + ".jwt.key")
 }
