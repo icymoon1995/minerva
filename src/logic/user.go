@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"github.com/labstack/echo"
 	"github.com/labstack/gommon/log"
 	"minerva/src/common"
 	logic "minerva/src/logic/common"
@@ -19,7 +20,7 @@ type UserLogic struct {
  *	@params params map[string]interface{} 筛选的参数
  *	@return map[string]interface{}
  */
-func (UserLogic) Index(params map[string]interface{}) map[string]interface{} {
+func (UserLogic) Index(params map[string]interface{}, ctx echo.Context) map[string]interface{} {
 
 	perPage, exist := params["per_page"].(int)
 	if !exist {

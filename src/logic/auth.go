@@ -4,14 +4,12 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo"
 	"log"
 	"minerva/src/common"
+	logic "minerva/src/logic/common"
 	"minerva/src/model"
 )
-
-var cookieSession = sessions.NewCookieStore([]byte("cookie_secret"))
 
 /**
   相当于传统的UserService
@@ -56,13 +54,10 @@ func (AuthLogic) Verify(email string, password string) (bool, error) {
  *	登录
  */
 func (AuthLogic) SetLoginInfo(ctx echo.Context, value string) {
-	cookieSession.Options.HttpOnly = true
+	// 保护cookie的安全性
+	logic.CookieSession.Options.HttpOnly = true
 	// 设置cookie 、 利用 redis 存储缓存用户信息等
-	session, _ := cookieSession.Get(ctx.Request(), "auth")
+	session, _ := logic.CookieSession.Get(ctx.Request(), "auth")
 	session.Values["email"] = value
 	_ = session.Save(ctx.Request(), ctx.Response())
-}
-
-func (AuthLogic) setAuthInfo() {
-
 }
