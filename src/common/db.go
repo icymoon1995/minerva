@@ -5,29 +5,26 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/xorm"
 	"github.com/spf13/viper"
-	"strings"
 )
 
 // 对外提供 common.DB
 var DB *xorm.Engine
 
-func dbInit () {
+var dbPrefix string
 
+func dbPreFixInit() {
+	dbPrefix = Enviorment + ".db."
+}
+
+func dbInit() {
 	/**
 	 *	初始化 数据库连接信息
 	 */
 	var err error
 
-	// 获取环境
-	var env = viper.GetString("common.env")
-
-	// 默认为develop
-	if strings.EqualFold(env, "") {
-		env = "develop"
-	}
-
 	// 配置前缀 未使用全局的前缀 viper.SetEnvPrefix()
-	var dbPrefix string = env + ".db."
+	//var dbPrefix string = Enviorment + ".db."
+	dbPreFixInit()
 
 	// 读取数据库连接的配置
 	var username string = viper.GetString(dbPrefix + "username")
