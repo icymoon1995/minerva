@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo"
 	"log"
 	"minerva/src/logic"
+	logicCommon "minerva/src/logic/common"
 	"minerva/src/model"
 	"net/http"
 	"strconv"
@@ -16,7 +17,10 @@ var UserLogic logic.UserLogic = logic.UserLogic{}
 
 // hello world
 func (u UserController) SayHello(ctx echo.Context) error {
-	var result string = "hello world"
+
+	sessionData, _ := logicCommon.CookieSession.Get(ctx.Request(), "auth")
+	var user string = (sessionData.Values["email"]).(string)
+	var result string = "hello " + user
 	return ctx.String(http.StatusOK, result)
 }
 
@@ -50,7 +54,7 @@ func (u UserController) Detail(ctx echo.Context) error {
 func (u UserController) Index(ctx echo.Context) error {
 	// 验证。。
 	params := make(map[string]interface{})
-	data := UserLogic.Index(params)
+	data := UserLogic.Index(params, ctx)
 
 	return ctx.JSON(http.StatusOK, data)
 }

@@ -2,10 +2,7 @@ package controller
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo"
-	"github.com/labstack/echo-contrib/session"
-	"github.com/labstack/gommon/log"
 	"github.com/spf13/viper"
 	"minerva/src/common"
 	"minerva/src/logic"
