@@ -2,7 +2,10 @@ package controller
 
 import (
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo-contrib/session"
+	"github.com/labstack/gommon/log"
 	"github.com/spf13/viper"
 	"minerva/src/common"
 	"minerva/src/logic"
@@ -49,11 +52,13 @@ func (login LoginController) Login(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, error.Error())
 	}
 
+	// 设置session
+	authLogic.SetLoginInfo(ctx, email)
+
 	return ctx.JSON(http.StatusOK, echo.Map{
 		"token": token,
 	})
 
-	return echo.ErrUnauthorized
 }
 
 /**
