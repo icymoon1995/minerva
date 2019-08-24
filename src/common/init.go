@@ -12,4 +12,7 @@ func Init() {
 
 	// redis连接池初始化
 	redisPoolInit()
+
+	// rabbitMq初始化
+	rabbitInit()
 }

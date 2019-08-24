@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/spf13/viper"
 	"minerva/src/common"
+	logic "minerva/src/logic/common"
 	"minerva/src/routes"
 	"strings"
 )
@@ -14,6 +15,9 @@ func main() {
 
 	// 注册路由
 	routes.RegisterRoutes()
+
+	// 队列接受消息
+	logic.ReceiveMessage()
 
 	// 监听 开始服务
 	startListen()
