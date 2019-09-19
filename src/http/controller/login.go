@@ -23,6 +23,13 @@ type JwtCustomClaims struct {
 	jwt.StandardClaims
 }
 
+/**
+ *  登录接口
+ *	POST /minerva/login
+ *
+ *  @param ctx echo.Context
+ *  @return error error
+ */
 func (login LoginController) Login(ctx echo.Context) error {
 
 	// 用户名

@@ -3,11 +3,16 @@ package routes
 import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/spf13/viper"
 	"minerva/src/common"
 	"minerva/src/http/controller"
 )
 
+// 路由管理
 var Route *echo.Echo
+
+// base 路由组
+var BaseGroup *echo.Group
 
 /**
   注册路由
@@ -17,11 +22,14 @@ func RegisterRoutes() {
 	// echo的路由
 	Route = echo.New()
 
+	// 服务名作 基础路由的group
+	var serviceName string = viper.GetString("common.serviceName")
+	BaseGroup = Route.Group("/" + serviceName)
+
 	// 登录相关路由
 	registerLogin()
 	// 注册user相关路由
 	registerUser()
-
 }
 
 /**
@@ -31,7 +39,8 @@ func registerUser() {
 	userController := controller.UserController{}
 
 	// Group自动加prefix:
-	userRoutes := Route.Group("users")
+	userRoutes := BaseGroup.Group("users")
+
 	// 暂时先做jwt的token校验
 	userRoutes.Use(middleware.JWT([]byte(common.JWTKey)))
 
@@ -42,6 +51,8 @@ func registerUser() {
 	// user详情
 	userRoutes.GET("/:id", userController.Detail)
 
+	userRoutes.Any()
+
 }
 
 /**
@@ -49,5 +60,6 @@ func registerUser() {
 */
 func registerLogin() {
 	loginController := controller.LoginController{}
-	Route.POST("/login", loginController.Login)
+
+	BaseGroup.POST("/login", loginController.Login)
 }

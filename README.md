@@ -1,5 +1,18 @@
 # minerva
-personal project, Welcome to your advice
+Welcome to your advice
+
+## 使用方式:  
+使用了go-micro的网关 
+注册中心使用的consul(使用别的请替换)
+ 
+
+1. 更改config/env.yaml的配置
+ 
+2. 开启 go-micro 网关   
+```MICRO_REGISTRY=consul micro api --handler=http --address={address} --namespace=personal.icymoon```
+
+3. 运行服务     
+ ```MICRO_REGISTRY=consul go run src/server/main.go```
 
 ## 目录
 
@@ -15,6 +28,7 @@ personal project, Welcome to your advice
     *   model - model层
     *   routes - 路由文件
     *   server - 启动文件 
+    *   service - 对接其他服务的文件
 
 ## 更新记录
 *   v0.1   
@@ -27,10 +41,15 @@ personal project, Welcome to your advice
         中间件jwt登录及session存储
 *   v0.5    
         redis对接,并完成test文件
+*   v0.6    
+        go-micro 服务注册完成,替代原始的echo启动
 
 ### Used
 xorm    
 echo    
+go-micro    
+rabbitmq    
+consul
 ..
 
 
