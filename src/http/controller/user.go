@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	"log"
 	"minerva/src/logic"
@@ -15,7 +17,13 @@ type UserController struct {
 
 var UserLogic logic.UserLogic = logic.UserLogic{}
 
-// hello world
+/**
+	hello world - 正常 set session
+    GET /minerva/users/hello
+
+	@params ctx echo.Context
+	@return json
+*/
 func (u UserController) SayHello(ctx echo.Context) error {
 
 	sessionData, _ := logicCommon.CookieSession.Get(ctx.Request(), "auth")
@@ -25,8 +33,26 @@ func (u UserController) SayHello(ctx echo.Context) error {
 }
 
 /**
+	hello world - 读取token
+    GET /minerva/users/helloByToken
+
+	@params ctx echo.Context
+	@return json
+*/
+func (u UserController) SayHelloByToken(ctx echo.Context) error {
+	// authorization := ctx.Request().Header.Get("Authorization")
+	// authorization:    Bearer ***
+
+	users := ctx.Get("jwt_auth").(*jwt.Token)
+	claims := users.Claims.(*JwtCustomClaims)
+
+	fmt.Println(claims)
+	return ctx.String(http.StatusOK, "Welcome "+claims.Email+"!")
+}
+
+/**
 	获取user详情
-    GET /users/:id
+    GET /minerva/users/:id
 	@params ctx echo.Context
 	@return json
 */
@@ -47,7 +73,7 @@ func (u UserController) Detail(ctx echo.Context) error {
 
 /**
 	获取user列表
-    GET /users/index
+    GET /minerva/users/index
 	@params ctx echo.Context
 	@return json
 */

@@ -24,7 +24,7 @@ func RegisterRoutes() {
 
 	// 服务名作 基础路由的group
 	var serviceName string = viper.GetString("common.serviceName")
-	BaseGroup = Route.Group("/" + serviceName)
+	BaseGroup = Route.Group(serviceName)
 
 	// 登录相关路由
 	registerLogin()
@@ -39,19 +39,30 @@ func registerUser() {
 	userController := controller.UserController{}
 
 	// Group自动加prefix:
-	userRoutes := BaseGroup.Group("users")
+	userRoutes := BaseGroup.Group("/users")
+
+	// jwt config
+	config := middleware.JWTConfig{
+		Claims:     &controller.JwtCustomClaims{},
+		SigningKey: []byte(common.JWTKey),
+		// 获取token的标志
+		ContextKey: "jwt_auth",
+	}
+	// jwt 使用
+	userRoutes.Use(middleware.JWTWithConfig(config))
 
 	// 暂时先做jwt的token校验
-	userRoutes.Use(middleware.JWT([]byte(common.JWTKey)))
+	// userRoutes.Use(middleware.JWT([]byte(common.JWTKey)))
 
-	// hello
+	// hello world
 	userRoutes.GET("/hello", userController.SayHello)
+	// hello2
+	userRoutes.GET("/helloByToken", userController.SayHelloByToken)
+
 	// user列表
 	userRoutes.GET("/index", userController.Index)
 	// user详情
 	userRoutes.GET("/:id", userController.Detail)
-
-	userRoutes.Any()
 
 }
 

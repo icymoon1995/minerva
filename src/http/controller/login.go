@@ -14,14 +14,15 @@ import (
 type LoginController struct {
 }
 
-var authLogic logic.AuthLogic = logic.AuthLogic{}
-
 // jwt加密的数据结构体
 type JwtCustomClaims struct {
 	Email string `json:"email"`
 	IsGod bool   `json:"admin"`
 	jwt.StandardClaims
+	ExpiresAt interface{}
 }
+
+var authLogic logic.AuthLogic = logic.AuthLogic{}
 
 /**
  *  登录接口
@@ -80,6 +81,7 @@ func verify(email string, password string) error {
 
 /**
 利用JWT生成token
+   JwtCustomClaims 当参数?
 */
 func generateToken(data map[string]interface{}) (string, error) {
 	var env string = common.Enviorment + "."
@@ -91,20 +93,24 @@ func generateToken(data map[string]interface{}) (string, error) {
 	// 目前单位是
 	var d time.Duration = time.Duration(jwtExpireInt) * time.Second
 
-	// 填充必要数据 目前只用了email 和 isGod
+	token := jwt.New(jwt.SigningMethodHS256)
+
 	claims := &JwtCustomClaims{
-		data["email"].(string),
-		data["isGod"].(bool),
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(d).Unix(),
-		},
+		Email:     data["email"].(string),
+		IsGod:     data["isGod"].(bool),
+		ExpiresAt: time.Now().Add(d).Unix(),
 	}
 
-	//	通过claims生成token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// 设置claims
+	token.Claims = claims
 
-	// jwt签名
+	//	通过claims生成token
 	reallyToken, err := token.SignedString([]byte(jwtKey))
+
+	//token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// jwt签名
+	//reallyToken, err := token.SignedString([]byte(jwtKey))
+
 	if err != nil {
 		return "", err
 	}
