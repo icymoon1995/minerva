@@ -26,6 +26,9 @@ func RegisterRoutes() {
 	var serviceName string = viper.GetString("common.serviceName")
 	BaseGroup = Route.Group(serviceName)
 
+	// recover异常
+	BaseGroup.Use(middleware.Recover())
+
 	// 登录相关路由
 	registerLogin()
 	// 注册user相关路由

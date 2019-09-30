@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
@@ -14,7 +15,38 @@ import (
 var rabbit *amqp.Connection
 var Channel *amqp.Channel
 var Queue amqp.Queue
+
 var rabbitPrefix string // redis配置前缀
+
+// 发送者确认的队列
+var ConfirmChan chan amqp.Confirmation
+
+// 死信队列
+var deadExchange string = "dead_message_exchange"
+
+// 死信路由key
+var deadRouteKey string = "dead_key"
+
+var (
+	MqErrorFailConnect        = errors.New("Failed to connect to RabbitMq ")
+	MqErrorChannelInitFail    = errors.New("fail to initialize channel ")
+	MqErrorQueueInitFail      = errors.New("Failed to initialize queue ")
+	MqErrorExchangeInitFail   = errors.New("Failed to initialize exchange ")
+	MqErrorQueueBindFail      = errors.New("Failed to bind queue ")
+	MqErrorChannelConfirmFail = errors.New("Failed to open channel mode confirm  ")
+	MqErrorSendMessageFail    = errors.New("Failed to send message after many tries ")
+	MqErrorSendMessageTimeout = errors.New("send message timeout")
+
+	MqMessageSuccess = "send message success"
+)
+
+// 消息
+type Message struct {
+	Id       int                    `json:"id"`
+	Action   string                 `json:"action"`   // 消息动作
+	Content  map[string]interface{} `json:"content"`  // 具体的消息内容
+	Callback string                 `json:"callback"` // 消费成功后 调用的回调函数
+}
 
 // 初始化前缀
 func rabbitPreInit() {
@@ -25,19 +57,38 @@ func rabbitPreInit() {
 初始化rabbit队列
 */
 func rabbitInit() {
+
 	// 初始化前缀
 	rabbitPreInit()
+
 	// rabbit conn连接初始化
 	rabbitConn()
 
+	// rabbit 组件初始化
+	componentInit()
+
+}
+
+// 组件初始化
+func componentInit() {
+
 	// 创建通道
-	createChannel()
+	channelInit()
 
+	// 队列名
+	var queueName string = viper.GetString(rabbitPrefix + "queue")
 	// 创建队列
-	createQueue()
+	queueInit(queueName, deadExchange, deadRouteKey)
 
+	// 绑定的route key
+	var routeKeys string = viper.GetString(rabbitPrefix + "routeKey")
+	// 绑定的 交换机
+	var exchangeName string = viper.GetString(rabbitPrefix + "exchange")
 	// 绑定队列
-	queueBind()
+	queueBind(Queue.Name, routeKeys, exchangeName)
+
+	// 创建事务交换器
+	transactionInit()
 
 }
 
@@ -67,7 +118,7 @@ func rabbitConn() {
 	})
 
 	if err != nil {
-		log.Fatalf("%s: %s", "Failed to connect to RabbitMQ", err)
+		log.Fatalf("%s: %s: %s", "common.rabbitMq#rabbitConn", MqErrorFailConnect, err)
 	}
 
 	log.Println("rabbit mq connection success")
@@ -76,27 +127,62 @@ func rabbitConn() {
 /**
 创建通道
 */
-func createChannel() {
+func channelInit() {
 	var err error
 	Channel, err = rabbit.Channel()
 
 	if err != nil {
-		log.Fatalf("%s: %s", "Failed to open channel", err)
+		log.Fatalf("%s: %s: %s", "common.rabbitMq#channelInit", MqErrorChannelInitFail, err)
 	}
 	log.Println("rabbit mq channel success")
+
+	// 开启发送者确认模式
+	err = Channel.Confirm(false)
+	ConfirmChan = make(chan amqp.Confirmation)
+	Channel.NotifyPublish(ConfirmChan)
+
+	if err != nil {
+		log.Fatalf("%s: %s: %s", "common.rabbitMq#channelInit", MqErrorChannelConfirmFail, err)
+	}
 }
 
 /**
-创建队列
+	创建通道
+ 	@param name string 交换器名
+ 	@param exchangeType string 交换器类型
 */
-func createQueue() {
-	var name string = viper.GetString(rabbitPrefix + "queue")
+func exchangeInit(name string, exchangeType string) {
+	var err error
+	// 创建exchange
+	err = Channel.ExchangeDeclare(
+		name,         // exchange_name
+		exchangeType, // exchange_type
+		true,         // durable
+		false,        // auto-deleted
+		false,        // internal
+		false,        // no-wait
+		nil,          // arguments
+	)
+
+	if err != nil {
+		log.Fatalf("%s: %s: %s", "common.rabbitMq#exchangeInit", MqErrorExchangeInitFail.Error(), err)
+	}
+
+}
+
+/**
+	创建队列
+  	@param name	string	队列名
+	@param deadExchange string 死信交换器
+	@param deadRouteKey string 死信路由key
+*/
+func queueInit(name string, deadExchange string, deadRouteKey string) {
 	var err error
 
 	args := amqp.Table{}
 	// 绑定该队列的 死信route和key
-	args["x-dead-letter-exchange"] = "dead_message_exchange"
-	args["x-dead-letter-routing-key"] = "dead_key"
+	args["x-dead-letter-exchange"] = deadExchange
+	args["x-dead-letter-routing-key"] = deadRouteKey
 
 	Queue, err = Channel.QueueDeclare(
 		name,  // name
@@ -108,18 +194,18 @@ func createQueue() {
 	)
 
 	if err != nil {
-		log.Fatalf("%s: %s", "Failed to init queue", err)
+		log.Fatalf("%s: %s: %s ", "common.rabbitMq#queueInit", MqErrorQueueInitFail, err)
 	}
 }
 
 /**
 队列绑定
+@param queueName string 队列名
+@param routeKeys string 绑定的路由key,可以多个逗号分割
+@param exchangeName string 绑定的exchange名称
 */
-func queueBind() {
-	// 绑定的route key
-	var routeKeys string = viper.GetString(rabbitPrefix + "routekey")
-	// 绑定的 交换机
-	var exchangeName string = viper.GetString(rabbitPrefix + "exchange")
+func queueBind(queueName string, routeKeys string, exchangeName string) {
+
 	var err error
 
 	var routeNames []string
@@ -138,45 +224,8 @@ func queueBind() {
 			nil,
 		)
 		if err != nil {
-			log.Fatalf("%s: %s", "Failed to bind queue", err)
+			log.Fatalf("%s: %s: %s ", "common.rabbitMq#queueBind", MqErrorQueueBindFail, err)
 		}
 	}
 
 }
-
-// 发送消息需要创建exchange
-//func createExchange(name string, kind string) {
-//	error := channel.ExchangeDeclare(
-//		name, // name
-//		kind,      // type
-//		true,          // durable
-//		false,         // auto-deleted
-//		false,         // internal
-//		false,         // no-wait
-//		nil,           // arguments
-//	)
-//
-//	if error != nil {
-//		log.Fatalf("%s: %s", "Failed to create exchange", error)
-//	}
-//}
-
-//func SendMessage(message map[string]interface{}, exchangeName string, routeName string) {
-//	jsonMsg, _ := json.Marshal(message)
-//
-//	error := channel.Publish(
-//		exchangeName, // exchange
-//		routeName,    // routing key
-//		false,        // mandatory
-//		false,
-//		amqp.Publishing{
-//			DeliveryMode: amqp.Persistent,
-//			ContentType:  "text/plain",
-//			Body:         jsonMsg,
-//			//[]byte(body),
-//		})
-//
-//	if error != nil {
-//		log.Fatalf("%s: %s", "Failed to send message", error)
-//	}
-//}

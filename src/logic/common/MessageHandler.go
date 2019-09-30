@@ -27,41 +27,45 @@ func ReceiveMessage() {
 
 			log.Println("start handle message")
 
+			// d.MessageId
 			// 处理逻辑
-			handle(d.Body)
+			error = handle(d.Body, d.DeliveryTag)
 
 			log.Println("end handle message")
 
-			d.Reject(false)
+			//	d.Reject(false)
 			if error != nil {
 				_ = d.Reject(false)
 			}
 			_ = d.Ack(false)
-			// 批量
-			//_ = d.Ack(false)
-			//
-			// d.Ack(true)
-			//err := d.Reject(true)
-			//if err != nil {
-			//	log.Print(err)
-			//}
+
 		}
 	}()
 	<-forever
 }
 
-func handle(body []byte) {
+/**
+	接收消息体 处理消息
+ 	@param body []byte 消息体内容
+	@param deliveryTag uint64 消息编号tag
+*/
+func handle(body []byte, deliveryTag uint64) error {
+	// 用interface处理消息
+	// var jsonInterface interface{}
+	// json.Unmarshal(d.Body, &jsonInterface)
+	// message2 := jsonInterface.(map[string]interface{})
+	// message3["id"], ":", message3["action"], ":", message3["callback"], ":", message3["content"]
 
-	// 默认message是key=>value格式
-	message := make(map[string]string)
+	var message common.Message
 	error := json.Unmarshal(body, &message)
 
 	if error != nil {
 		log.Println("json.unmarshal error : ", error)
 	}
 
-	// 具体处理
-	for key, value := range message {
-		log.Printf(key + " : " + value)
-	}
+	// 具体的处理逻辑
+	// 保证幂等性 用redis或者其他做唯一处理  redis.setnx("message:id")
+	log.Println(message.Id, ":", message.Action, ":", message.Content, ":", message.Callback)
+
+	return error
 }
