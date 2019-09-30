@@ -67,6 +67,9 @@ func rabbitInit() {
 	// rabbit 组件初始化
 	componentInit()
 
+	// 事务相关初始化
+	transactionInit()
+
 }
 
 // 组件初始化

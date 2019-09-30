@@ -8,6 +8,33 @@ import (
 	"time"
 )
 
+/**
+使用事务的小demo:
+
+// 测试事务
+//exchangeName := "transaction_exchange"
+//routeKey := "key"
+content := make(map[string]interface{})
+content["name"] = "test_name"
+content["email"] = "email@email.com"
+message := common.Message{
+	Id:       1,
+	Action:   "add",
+	Content:  content,
+	Callback: "minerva/haha", // 消费成功后 调用的回调函数
+}
+// exchangeName,routeKey
+err := common.TryMessageTransaction()
+if err != nil {
+	log.Println(err)
+}
+//  exchangeName, routeKey
+err = common.MakeMessageTransaction(message)
+if err != nil {
+	log.Println(err)
+}
+*/
+
 // 发送消息最大尝试次数
 var MaxTries = 2
 

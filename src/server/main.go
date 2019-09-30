@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"log"
 	"minerva/src/common"
+	logic "minerva/src/logic/common"
 	"minerva/src/routes"
 	"strings"
 )
@@ -15,60 +16,13 @@ func main() {
 	common.Init()
 
 	// 注册路由
-	// routes.RegisterRoutes()
+	routes.RegisterRoutes()
 
 	// 队列接受消息
-	// go logic.ReceiveMessage()
+	go logic.ReceiveMessage()
 
 	// 监听 开始服务
-	// startListen()
-
-	//session := common.DB.NewSession()
-	//defer session.Close()
-	//err := session.Begin()
-	//
-	//if err != nil {
-	//
-	//}
-	//user := &model.User{}
-	//
-	//fmt.Println("main before get user")
-	//result,err := session.Where("id = ?" , 4).ForUpdate().Get(user)
-	//fmt.Println("main after get user")
-	//fmt.Println(result)
-	//user.Name = "111112222"
-	//
-	//re, err := session.Where("id = ?", user.Id).Update(user)
-	//
-	//time.Sleep(5 * time.Second)
-	//
-	//fmt.Println(re)
-	//
-	//_ = session.Commit()
-
-	// 测试事务
-	//exchangeName := "transaction_exchange"
-	//routeKey := "key"
-	content := make(map[string]interface{})
-	content["name"] = "test_name"
-	content["email"] = "email@email.com"
-	message := common.Message{
-		Id:       1,
-		Action:   "add",
-		Content:  content,
-		Callback: "minerva/haha", // 消费成功后 调用的回调函数
-	}
-
-	// exchangeName,routeKey
-	err := common.TryMessageTransaction()
-	if err != nil {
-		log.Println(err)
-	}
-	//  exchangeName, routeKey
-	err = common.MakeMessageTransaction(message)
-	if err != nil {
-		log.Println(err)
-	}
+	startListen()
 }
 
 // echo的开启监听

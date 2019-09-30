@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"testing"
 )
@@ -8,7 +9,7 @@ import (
 /**
 	redigo
      对应redis的常用操作
- */
+*/
 /**
  * 运行命令:
  * go test -v src/common/redigo_test.go
@@ -68,6 +69,12 @@ func TestSetString(t *testing.T) {
 		t.Error("redigo_test#GetStringTest, redisClient.Do GET error :", error)
 	}
 
+	//if result.(int64) == 0 {
+	//	fmt.Println(123)
+	//} else {
+	//	fmt.Println(5555)
+	//}
+	fmt.Println(result.(int64))
 	t.Log(result) // OK
 }
 
@@ -230,7 +237,7 @@ func TestSetSet(t *testing.T) {
 }
 
 //  常用操作 - set get all values 查看集合所有values
-func TestValuesSet (t *testing.T) {
+func TestValuesSet(t *testing.T) {
 	redisClient := initClient()
 
 	var key string = "set"
@@ -428,7 +435,7 @@ func TestIteratorSortSet(t *testing.T) {
 		}
 
 		values, error = redis.Scan(values, &cursor, &items)
-		t.Log("items" , items)
+		t.Log("items", items)
 
 		if error != nil {
 			t.Error("redigo_test#TestIteratorSortSet, redisClient.Scan GET error :", error)
