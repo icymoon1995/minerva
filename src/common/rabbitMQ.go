@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/spf13/viper"
@@ -20,6 +21,15 @@ var rabbitPrefix string // redis配置前缀
 
 // 发送者确认的队列
 var ConfirmChan chan amqp.Confirmation
+
+// 默认最大尝试次数
+var MaxTries int = 2
+
+// 发送消息最大等待时间
+var MaxTime int = 700
+
+// ping消息的类型
+var MessageActionPrepare string = "prepare_ping"
 
 // 死信队列
 var deadExchange string = "dead_message_exchange"
@@ -67,9 +77,6 @@ func rabbitInit() {
 	// rabbit 组件初始化
 	componentInit()
 
-	// 事务相关初始化
-	transactionInit()
-
 }
 
 // 组件初始化
@@ -89,10 +96,6 @@ func componentInit() {
 	var exchangeName string = viper.GetString(rabbitPrefix + "exchange")
 	// 绑定队列
 	queueBind(Queue.Name, routeKeys, exchangeName)
-
-	// 创建事务交换器
-	transactionInit()
-
 }
 
 /**
@@ -231,4 +234,108 @@ func queueBind(queueName string, routeKeys string, exchangeName string) {
 		}
 	}
 
+}
+
+/**
+发送消息 (含重试处理)
+@param message []byte 消息
+@param exchange string 交换器
+@param routeKey string 路由key
+@return *amqp.Confimation, error
+*/
+func SendMessage(message Message, exchange string, routeKey string) (*amqp.Confirmation, error) {
+
+	jsonMsg, jsonErr := json.Marshal(message)
+
+	if jsonErr != nil {
+		return nil, jsonErr
+	}
+
+	// 发送消息计数
+	var count int = 0
+	// 发送消息
+	confirmation, err := mqSend(jsonMsg, exchange, routeKey)
+
+	// 重试机制
+	// 只有当消息超时再重新发送 , 其他错误直接返回
+	for err != nil && err == MqErrorSendMessageTimeout {
+		// 超过了最大重试次数
+		if count >= MaxTries {
+			return confirmation, MqErrorSendMessageFail
+		}
+		confirmation, err = mqSend(jsonMsg, exchange, routeKey)
+		count++
+
+		// todo  mq拒绝接受消息处理 (confirmation.Ack == false)
+		if confirmation != nil && confirmation.Ack == false {
+
+		}
+	}
+
+	return confirmation, err
+}
+
+/**
+mq发送消息
+@param message []byte 消息
+@param exchange string 交换器
+@param routeKey string 路由key
+@return *amqp.Confimation, error
+*/
+func mqSend(message []byte, exchange string, routeKey string) (*amqp.Confirmation, error) {
+	err := Channel.Publish(
+		exchange,
+		routeKey,
+		false, // mandatory
+		false,
+		amqp.Publishing{
+			DeliveryMode: amqp.Persistent,
+			ContentType:  "text/plain",
+			Body:         message,
+			// MessageId: "",
+		})
+
+	if err != nil {
+		return nil, err
+		// panic(err)
+	}
+
+	// 结果处理
+	select {
+
+	// 确认处理
+	case messageConfirmation := <-ConfirmChan: //如果有数据，下面打印。但是有可能ch一直没数据
+		log.Printf("%s: %s: %s: %d ", "common.transactionWithRabbit#mqSend", MqMessageSuccess, message, messageConfirmation.DeliveryTag)
+		return &messageConfirmation, nil
+
+	// 超时处理
+	case <-time.After(time.Duration(MaxTime) * time.Millisecond): //上面的ch如果一直没数据会阻塞，那么select也会检测其他case条件，检测到后MaxTime毫秒超时
+		log.Printf("%s: %s: %s ", "common.transactionWithRabbit#mqSend", MqErrorSendMessageTimeout.Error(), message)
+		return nil, MqErrorSendMessageTimeout
+	}
+
+}
+
+/**
+事务开启 - 尝试与队列通信
+@param exchange string 交换器名
+@param routeKey string 路由key
+@return error
+*/
+func TryMessageTransactionWithExchangeAndRoute(exchange string, routeKey string) error {
+	// send prepare
+	content := make(map[string]interface{})
+	prepareMessage := Message{
+		Id:       -1,
+		Action:   MessageActionPrepare,
+		Content:  content,
+		Callback: "", // 消费成功后 调用的回调函数
+	}
+	_, err := SendMessage(prepareMessage, exchange, routeKey)
+
+	if err != nil {
+		log.Println(prepareMessage.Action, err.Error())
+		// panic(err)
+	}
+	return err
 }
