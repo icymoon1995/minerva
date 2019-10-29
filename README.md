@@ -43,7 +43,8 @@ Welcome to your advice
         redis对接,并完成test文件
 *   v0.6    
         go-micro 服务注册完成,替代原始的echo启动
-
+*   v0.7    
+        基于rabbitmq做tcc事务
 ### Used
 xorm    
 echo    
