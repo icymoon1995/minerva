@@ -29,7 +29,7 @@ main() {
 	listen := Listener1{
 
 	}
-	trans := common.NewTransaction(&listen)
+	trans := &common.NewTransaction(&listen)
 
 	message := common.Message{
 		Id:1,
@@ -99,11 +99,9 @@ func (trans *transaction) Try() error {
 /**
 发送事务处理的消息
 @param trulyMessage Message 消息
-@param exchange string 交换器名
-@param routeKey string 路由key
 @return error
 */
-func (trans *transaction) MakeMessageTransaction(trulyMessage Message) error {
+func (trans *transaction) MakeMessageTransaction(trulyMessage *Message) error {
 	var err error
 
 	// 如果需要  发送try 消息

@@ -23,7 +23,27 @@ func main() {
 
 	// 监听 开始服务
 	startListen()
+}
 
+type Listener1 struct {
+	Status int
+}
+
+func (listener *Listener1) Check() int {
+
+	return listener.Status
+}
+
+func (listener *Listener1) RollBack() error {
+	log.Println("listener rollback")
+	listener.Status = 2
+	return nil
+}
+
+func (listener *Listener1) Execute() error {
+	log.Println("execute local transaction")
+	listener.Status = 1
+	return nil
 }
 
 // echo的开启监听

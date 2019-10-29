@@ -238,12 +238,12 @@ func queueBind(queueName string, routeKeys string, exchangeName string) {
 
 /**
 发送消息 (含重试处理)
-@param message []byte 消息
+@param message &Message 消息
 @param exchange string 交换器
 @param routeKey string 路由key
 @return *amqp.Confimation, error
 */
-func SendMessage(message Message, exchange string, routeKey string) (*amqp.Confirmation, error) {
+func SendMessage(message *Message, exchange string, routeKey string) (*amqp.Confirmation, error) {
 
 	jsonMsg, jsonErr := json.Marshal(message)
 
@@ -325,7 +325,7 @@ func mqSend(message []byte, exchange string, routeKey string) (*amqp.Confirmatio
 func TryMessageTransactionWithExchangeAndRoute(exchange string, routeKey string) error {
 	// send prepare
 	content := make(map[string]interface{})
-	prepareMessage := Message{
+	prepareMessage := &Message{
 		Id:       -1,
 		Action:   MessageActionPrepare,
 		Content:  content,

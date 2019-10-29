@@ -16,7 +16,7 @@ func TestProducer(t *testing.T) {
 	listen := Listener1{}
 	trans := NewTransaction(&listen)
 
-	message := Message{
+	message := &Message{
 		Id:     1,
 		Action: "add",
 		Content: map[string]interface{}{
