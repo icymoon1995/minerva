@@ -2,7 +2,6 @@ package common
 
 import (
 	"github.com/spf13/viper"
-	"log"
 )
 
 /**
@@ -123,7 +122,8 @@ func (trans *transaction) MakeMessageTransaction(trulyMessage *Message) error {
 
 	// 出现异常、 ||  ack = false （拒绝消息)
 	if err != nil || (confirmation != nil && confirmation.Ack == false) {
-		log.Println(trulyMessage.Action, err.Error())
+		Logger.Println("transactionWithRabbit #MakeMessageTransaction error:", err.Error())
+		// trulyMessage.Action, err.Error())
 		var tryTime int = 0
 		// 回滚操作
 		for {
@@ -133,7 +133,7 @@ func (trans *transaction) MakeMessageTransaction(trulyMessage *Message) error {
 				break
 			}
 			if tryTime >= MaxTries {
-				log.Println("transaction rollback err : ", err.Error())
+				Logger.Println("transactionWithRabbit #MakeMessageTransaction rollback err : ", err.Error())
 				// 其他报警机制
 			}
 			tryTime++

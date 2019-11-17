@@ -2,8 +2,8 @@ package logic
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/streadway/amqp"
-	"log"
 	"minerva/src/common"
 	"net/http"
 	"strconv"
@@ -11,31 +11,39 @@ import (
 )
 
 func ReceiveMessage() {
-	messages, err := common.Channel.Consume(
-		common.Queue.Name, // queue
-		"",                // consumer
-		false,             // auto-ack
-		false,             // exclusive
-		false,             // no-local
-		false,             // no-wait
-		nil,               // args
-	)
+
 	forever := make(chan bool)
 
 	go func() {
-		for d := range messages {
 
+		//if common.Channel.IsClosed() || ch.IsClosed() {
+		//	log.Println("连接断开，重新连接")
+		//	err = InitRabbitmq(Url)
+		//	log.Println(err)
+		//}
+
+		messages, err := common.Channel.Consume(
+			common.Queue.Name, // queue
+			"",                // consumer
+			false,             // auto-ack
+			false,             // exclusive
+			false,             // no-local
+			false,             // no-wait
+			nil,               // args
+		)
+
+		for d := range messages {
+			fmt.Println(d)
 			if err != nil {
-				log.Println("some error", err)
+				common.Logger.Errorln("MessageHandler #ReceiveMessage error: ", err)
 			}
 
-			log.Println("start handle message")
+			common.Logger.Println("MessageHandler #ReceiveMessage start handle message")
 
-			// d.MessageId
 			// 处理逻辑
-			handle(d)
+			go handle(d)
 
-			log.Println("end handle message")
+			common.Logger.Println("end handle message")
 
 		}
 	}()
@@ -60,22 +68,26 @@ func handle(d amqp.Delivery) {
 	err := json.Unmarshal(d.Body, &message)
 
 	if err != nil {
-		log.Println("json.unmarshal error : ", err)
+		common.Logger.Errorln("MessageHandler #handle json.unmarshal error : ", err)
 		_ = d.Reject(false)
 	}
 
 	session := common.DB.NewSession()
+	fmt.Println(message.Id, message.Action, message.Content)
+
 	redisClient := common.RedisPool.Get()
 	var redisKey string = "message:" + strconv.Itoa(message.Id)
+
 	var redisValue string = "processing"
 
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("MessageHandler#handle error : ", err)
-			_, _ = redisClient.Do("del", redisKey)
-			_ = session.Rollback()
+			common.Logger.Errorln("MessageHandler#handle error : ", err)
+
+			//	_ = session.Rollback()
 
 		}
+		_, _ = redisClient.Do("del", redisKey)
 		// 关闭redis连接
 		redisClient.Close()
 		// 关闭session
@@ -85,7 +97,9 @@ func handle(d amqp.Delivery) {
 	// 保证幂等性 用redis或者其他做唯一处理  redis.setnx("message:id")
 	result, err := redisClient.Do("setnx", redisKey, redisValue)
 	if err != nil { // 出现异常 或者 已经在执行 属于重复消息，则拒绝执行
-		panic(err)
+		common.Logger.Errorln("MessageHandler#handle message repeat :", redisKey)
+		//	panic(err)
+		return
 	}
 
 	if result.(int64) == 0 {
@@ -95,11 +109,25 @@ func handle(d amqp.Delivery) {
 	// 开启mysql事务
 	err = session.Begin()
 	if err != nil {
+		common.Logger.Errorln("MessageHandler#handle begin session error :", err)
 		panic(err)
 	}
 
 	// 具体的处理逻辑
-	log.Println(message.Id, message.Action, message.Content)
+	common.Logger.Println(message.Id, message.Action, message.Content)
+
+	if err != nil {
+		_ = d.Reject(false)
+		panic(err)
+	}
+
+	// 确认消息回复   ack需要做重试机制？
+	err = d.Ack(false)
+
+	if err != nil {
+		common.Logger.Errorln("MessageHandler #handle ack error:", err)
+		panic(err)
+	}
 
 	if message.Callback != "" {
 		// 调用callback
@@ -112,13 +140,7 @@ func handle(d amqp.Delivery) {
 		defer resp.Body.Close()
 	}
 
-	//if err != nil {
-	//	_ = d.Reject(false)
-	//	panic(err)
-	//}
-
-	// 确认消息回复
-	_ = d.Ack(false)
-	// 提交事务
+	//提交事务
 	_ = session.Commit()
+
 }

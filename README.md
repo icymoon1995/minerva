@@ -45,12 +45,15 @@ Welcome to your advice
         go-micro 服务注册完成,替代原始的echo启动
 *   v0.7    
         基于rabbitmq做tcc事务
+*   v.8     
+       集成logrus 并将日志按照日期/类型输出到文件中
 ### Used
 xorm    
 echo    
 go-micro    
 rabbitmq    
 consul
+logrus
 ..
 
 

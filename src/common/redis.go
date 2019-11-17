@@ -2,7 +2,6 @@ package common
 
 import (
 	"github.com/garyburd/redigo/redis"
-	"github.com/labstack/gommon/log"
 	"github.com/spf13/viper"
 	"strings"
 	"time"
@@ -20,8 +19,8 @@ func preInit() {
 }
 
 /**
-	redis连接池初始化
- */
+redis连接池初始化
+*/
 func redisPoolInit() {
 	// 初始化前缀
 	preInit()
@@ -31,8 +30,8 @@ func redisPoolInit() {
 
 	RedisPool = &redis.Pool{
 
-		MaxIdle:     maxIdle,           //  最大空闲线程数
-		MaxActive:   maxActive,         // 最大活跃线程数
+		MaxIdle:     maxIdle,         //  最大空闲线程数
+		MaxActive:   maxActive,       // 最大活跃线程数
 		IdleTimeout: 3 * time.Second, // 空闲等待连接时间
 
 		Dial: func() (redis.Conn, error) {
@@ -47,15 +46,17 @@ func redisPoolInit() {
 
 		TestOnBorrow: func(c redis.Conn, t time.Time) error { // 连接心跳检测 -- 可能会影响性能
 			_, err := c.Do("PING")
-			log.Print(err)
+			if err != nil {
+				Logger.Fatal("redis.go #redisPoolInit err:", err)
+			}
 			return err
 		},
 	}
 }
 
 /**
-	配置连接redis
- */
+配置连接redis
+*/
 func redisConn() (redis.Conn, error) {
 	// 配置前缀 未使用全局的前缀 viper.SetEnvPrefix()
 
@@ -91,12 +92,12 @@ func redisConn() (redis.Conn, error) {
 		address,
 		redis.DialPassword(password),
 		redis.DialDatabase(database),
-		redis.DialConnectTimeout(3 * time.Second),
-		redis.DialReadTimeout(3 * time.Second),
-		redis.DialWriteTimeout(3 * time.Second),
+		redis.DialConnectTimeout(3*time.Second),
+		redis.DialReadTimeout(3*time.Second),
+		redis.DialWriteTimeout(3*time.Second),
 	)
 	if error != nil {
-		log.Fatal(error)
+		Logger.Fatal("redis.go #redisConn error", error)
 	}
 
 	return redisClient, error

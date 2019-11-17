@@ -15,6 +15,13 @@ func main() {
 	// 部分初始化工作
 	common.Init()
 
+	redis := common.RedisPool.Get()
+	t, err := redis.Do("ping")
+
+	log.Println(t)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	// 注册路由
 	routes.RegisterRoutes()
 
@@ -68,12 +75,12 @@ func startListen() {
 	err := service.Init()
 
 	if err != nil {
-		log.Fatal(err)
+		common.Logger.Fatal("main.go # startListen service init error : ", err)
 	}
 
 	// run service
 	if err := service.Run(); err != nil {
-		log.Fatal(err)
+		common.Logger.Fatal(err)
 	}
 
 	// echo的启动方式

@@ -1,6 +1,9 @@
 package common
 
 func Init() {
+	// 日志初始化
+	loggerInit()
+
 	// 配置文件初始化
 	configInit()
 
@@ -15,4 +18,5 @@ func Init() {
 
 	// rabbitMq初始化
 	rabbitInit()
+
 }

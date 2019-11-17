@@ -5,7 +5,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/xorm"
 	"github.com/spf13/viper"
-	"log"
 )
 
 // 对外提供 common.DB
@@ -42,7 +41,8 @@ func dbInit() {
 
 	// 测试数据库连接是否 OK
 	if err = DB.Ping(); err != nil {
-		log.Fatal("ping db error:", err)
+		Logger.Fatal("db.go #dbInit ping error:", err)
+		//log.al("ping db error:", err)
 	}
 
 	// 是否将 生成的sql语句打印在控制台

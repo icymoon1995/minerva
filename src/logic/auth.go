@@ -2,10 +2,8 @@ package logic
 
 import (
 	"crypto/sha1"
-	"errors"
 	"fmt"
 	"github.com/labstack/echo"
-	"log"
 	"minerva/src/common"
 	logic "minerva/src/logic/common"
 	"minerva/src/model"
@@ -24,28 +22,34 @@ type AuthLogic struct {
 	@param password string 密码
 	@return bool
 */
+
 func (AuthLogic) Verify(email string, password string) (bool, error) {
 	// 数据库去校验用户和密码
 	auth := &model.Auth{}
 	exist, error := common.DB.Where("email = ?", email).Get(auth)
 	if error != nil {
-		log.Print("logic.auth#Verify error :", error)
-		return false, error
+		common.Logger.Errorln("logic.auth#Verify error :", error)
+		return false, common.ServerError
 	}
 
 	if !exist {
-		return false, errors.New("can not found username")
-	}
-
-	if !auth.IsActive() {
-		return false, errors.New("your account is not login")
+		common.Logger.Errorln("logic.auth#Verify error : not found email (" + email + ")")
+		return false, common.NotFoundEmail
 	}
 
 	// 通过hash加密作对比
 	shaPassword := fmt.Sprintf("%X", sha1.Sum([]byte(password)))
 	if shaPassword != auth.Password {
-		return false, errors.New("password is not correct")
+		common.Logger.Errorln("logic.auth#Verify error : password error (" + email + ")")
+		return false, common.PasswordNotCorrect
 	}
+
+	// 账户激活验证
+	if !auth.IsActive() {
+		common.Logger.Errorln("logic.auth#Verify error : account is frozen : (" + email + ")")
+		return false, common.AccountFrozen
+	}
+
 	// setAuthInfo()
 	return true, nil
 }

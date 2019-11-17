@@ -2,7 +2,6 @@ package logic
 
 import (
 	"github.com/labstack/echo"
-	"github.com/labstack/gommon/log"
 	"minerva/src/common"
 	logic "minerva/src/logic/common"
 	"minerva/src/model"
@@ -46,7 +45,8 @@ func (UserLogic) Index(params map[string]interface{}, ctx echo.Context) map[stri
 	error := common.DB.Limit(perPage, offset).Find(&userList)
 
 	if error != nil {
-		log.Print("logic.user#Index: ", error)
+		common.Logger.Errorln("logic.user#Index: error:", error)
+		panic(common.ServerError)
 	}
 
 	// 为了统一处理分页。。转换成interface{}
@@ -69,7 +69,8 @@ func (UserLogic) Detail(id int) *model.User {
 	user := &model.User{}
 	_, error := common.DB.Id(id).Get(user)
 	if error != nil {
-		log.Print("logic.user#Detail error :", error)
+		common.Logger.Errorln("logic.user#Detail error :", error)
+		panic(common.ServerError)
 	}
 	return user
 }

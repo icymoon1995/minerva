@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
-	"log"
 	"net"
 	"strings"
 	"time"
@@ -46,8 +45,7 @@ var (
 	MqErrorChannelConfirmFail = errors.New("Failed to open channel mode confirm  ")
 	MqErrorSendMessageFail    = errors.New("Failed to send message after many tries ")
 	MqErrorSendMessageTimeout = errors.New("send message timeout")
-
-	MqMessageSuccess = "send message success"
+	MqMessageSuccess          = "send message success"
 )
 
 // 消息
@@ -124,10 +122,10 @@ func rabbitConn() {
 	})
 
 	if err != nil {
-		log.Fatalf("%s: %s: %s", "common.rabbitMq#rabbitConn", MqErrorFailConnect, err)
+		Logger.Fatalf("%s: %s: %s", "common.rabbitMq#rabbitConn", MqErrorFailConnect, err)
 	}
 
-	log.Println("rabbit mq connection success")
+	Logger.Println("rabbit mq connection success")
 }
 
 /**
@@ -138,9 +136,9 @@ func channelInit() {
 	Channel, err = rabbit.Channel()
 
 	if err != nil {
-		log.Fatalf("%s: %s: %s", "common.rabbitMq#channelInit", MqErrorChannelInitFail, err)
+		Logger.Fatalf("%s: %s: %s", "common.rabbitMq#channelInit", MqErrorChannelInitFail, err)
 	}
-	log.Println("rabbit mq channel success")
+	Logger.Println("rabbit mq channel success")
 
 	// 开启发送者确认模式
 	err = Channel.Confirm(false)
@@ -148,7 +146,7 @@ func channelInit() {
 	Channel.NotifyPublish(ConfirmChan)
 
 	if err != nil {
-		log.Fatalf("%s: %s: %s", "common.rabbitMq#channelInit", MqErrorChannelConfirmFail, err)
+		Logger.Fatalf("%s: %s: %s", "common.rabbitMq#channelInit", MqErrorChannelConfirmFail, err)
 	}
 }
 
@@ -171,7 +169,7 @@ func exchangeInit(name string, exchangeType string) {
 	)
 
 	if err != nil {
-		log.Fatalf("%s: %s: %s", "common.rabbitMq#exchangeInit", MqErrorExchangeInitFail.Error(), err)
+		Logger.Fatalf("%s: %s: %s", "common.rabbitMq#exchangeInit", MqErrorExchangeInitFail.Error(), err)
 	}
 
 }
@@ -200,7 +198,7 @@ func queueInit(name string, deadExchange string, deadRouteKey string) {
 	)
 
 	if err != nil {
-		log.Fatalf("%s: %s: %s ", "common.rabbitMq#queueInit", MqErrorQueueInitFail, err)
+		Logger.Fatalf("%s: %s: %s ", "common.rabbitMq#queueInit", MqErrorQueueInitFail, err)
 	}
 }
 
@@ -230,7 +228,7 @@ func queueBind(queueName string, routeKeys string, exchangeName string) {
 			nil,
 		)
 		if err != nil {
-			log.Fatalf("%s: %s: %s ", "common.rabbitMq#queueBind", MqErrorQueueBindFail, err)
+			Logger.Fatalf("%s: %s: %s ", "common.rabbitMq#queueBind", MqErrorQueueBindFail, err)
 		}
 	}
 
@@ -305,12 +303,12 @@ func mqSend(message []byte, exchange string, routeKey string) (*amqp.Confirmatio
 
 	// 确认处理
 	case messageConfirmation := <-ConfirmChan: //如果有数据，下面打印。但是有可能ch一直没数据
-		log.Printf("%s: %s: %s: %d ", "common.transactionWithRabbit#mqSend", MqMessageSuccess, message, messageConfirmation.DeliveryTag)
+		Logger.Printf("%s: %s: %s: %d ", "common.transactionWithRabbit#mqSend", MqMessageSuccess, message, messageConfirmation.DeliveryTag)
 		return &messageConfirmation, nil
 
 	// 超时处理
 	case <-time.After(time.Duration(MaxTime) * time.Millisecond): //上面的ch如果一直没数据会阻塞，那么select也会检测其他case条件，检测到后MaxTime毫秒超时
-		log.Printf("%s: %s: %s ", "common.transactionWithRabbit#mqSend", MqErrorSendMessageTimeout.Error(), message)
+		Logger.Printf("%s: %s: %s ", "common.transactionWithRabbit#mqSend", MqErrorSendMessageTimeout.Error(), message)
 		return nil, MqErrorSendMessageTimeout
 	}
 
@@ -334,7 +332,7 @@ func TryMessageTransactionWithExchangeAndRoute(exchange string, routeKey string)
 	_, err := SendMessage(prepareMessage, exchange, routeKey)
 
 	if err != nil {
-		log.Println(prepareMessage.Action, err.Error())
+		Logger.Error(prepareMessage.Action, err.Error())
 		// panic(err)
 	}
 	return err

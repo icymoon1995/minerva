@@ -54,6 +54,7 @@ func (login LoginController) Login(ctx echo.Context) error {
 	token, error := generateToken(data)
 
 	if error != nil {
+		common.Logger.Errorln("login.go #Login generateToken error :", error)
 		return echo.NewHTTPError(http.StatusInternalServerError, error.Error())
 	}
 
@@ -73,6 +74,7 @@ func verify(email string, password string) error {
 	// 后续考虑第三方认证。。。。todo
 	result, error := authLogic.Verify(email, password)
 	if !result {
+		common.Logger.Errorln("login.go# verify error:", error)
 		return error
 	}
 
@@ -112,6 +114,7 @@ func generateToken(data map[string]interface{}) (string, error) {
 	//reallyToken, err := token.SignedString([]byte(jwtKey))
 
 	if err != nil {
+		common.Logger.Errorln("login.go#generateToken error:", err)
 		return "", err
 	}
 
