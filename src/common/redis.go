@@ -11,31 +11,47 @@ import (
 // 使用get请 务必带上 defer close()， 不然资源会一直占用, 导致无法释放
 var RedisPool *redis.Pool
 
-var prefix string // redis配置前缀
+var redisPool = &redisPoolConfig{}
 
-// 初始化前缀
-func preInit() {
-	prefix = Enviorment + ".redis."
+type redisPoolConfig struct {
+	prefix      string
+	maxActive   int
+	maxIdle     int
+	idleTimeout time.Duration
+
+	redisConfig struct {
+		// 读取redis连接的配置
+		// 连接方式 默认为tcp
+		connectionType string
+		// 地址
+		host string
+		// Auth密码
+		password string
+		// 端口
+		port string
+		// 使用数据库
+		database int
+		// 连接超时时间
+		connTimeout time.Duration
+		// 读超时时间
+		readTimeout time.Duration
+		// 写超时时间
+		writeTimeout time.Duration
+	}
 }
 
-/**
-redis连接池初始化
-*/
-func redisPoolInit() {
+func newRedisPool() {
 	// 初始化前缀
-	preInit()
-
-	var maxActive int = viper.GetInt(prefix + "maxActive")
-	var maxIdle int = viper.GetInt(prefix + "maxIdle")
+	redisPool.redisPoolInit()
 
 	RedisPool = &redis.Pool{
 
-		MaxIdle:     maxIdle,         //  最大空闲线程数
-		MaxActive:   maxActive,       // 最大活跃线程数
-		IdleTimeout: 3 * time.Second, // 空闲等待连接时间
+		MaxIdle:     redisPool.maxIdle,     //  最大空闲线程数
+		MaxActive:   redisPool.maxActive,   // 最大活跃线程数
+		IdleTimeout: redisPool.idleTimeout, // 空闲等待连接时间
 
 		Dial: func() (redis.Conn, error) {
-			client, err := redisConn()
+			client, err := redisPool.redisConn()
 			if err != nil {
 				return nil, err
 			}
@@ -55,43 +71,49 @@ func redisPoolInit() {
 }
 
 /**
-配置连接redis
+redis连接池初始化
 */
-func redisConn() (redis.Conn, error) {
-	// 配置前缀 未使用全局的前缀 viper.SetEnvPrefix()
+func (redisPool *redisPoolConfig) redisPoolInit() {
+	// 初始化前缀
+	redisPool.prefix = Global.Environment + ".redis."
+	redisPool.maxActive = viper.GetInt(redisPool.prefix + "maxActive")
+	redisPool.maxIdle = viper.GetInt(redisPool.prefix + "maxIdle")
+	redisPool.idleTimeout = 3 * time.Second
 
-	// 读取redis连接的配置
-	// 连接方式 默认为tcp
-	var connectionType string = viper.GetString(prefix + "connection")
-	// 地址
-	var host string = viper.GetString(prefix + "host")
-	// Auth密码
-	var password string = viper.GetString(prefix + "password")
-	// 端口
-	var port string = viper.GetString(prefix + "port")
-	// 使用数据库
-	var database int = viper.GetInt(prefix + "database") // 默认为0
-
+	// 设置default的也行。。
+	var connectionType string = viper.GetString(redisPool.prefix + "connection")
 	if strings.EqualFold(connectionType, "") {
 		connectionType = "tcp"
 	}
+	var host string = viper.GetString(redisPool.prefix + "host") // 地址
 	if strings.EqualFold(host, "") {
 		host = "127.0.0.1"
 	}
 
-	// databaseInt, _ = strconv.Atoi(database)
-	// var connTimeout string = viper.GetString(dbPrefix + "conn_timeout")
-	// var readTimeout string = viper.GetString(dbPrefix + "read_timeout")
-	// var writeTimeout string = viper.GetString(dbPrefix + "write_timeout")
+	redisPool.prefix = Global.Environment + ".redis."
+	redisPool.redisConfig.host = host
+	redisPool.redisConfig.connectionType = connectionType                           // 连接方式 默认为tcp
+	redisPool.redisConfig.password = viper.GetString(redisPool.prefix + "password") // Auth密码
+	redisPool.redisConfig.port = viper.GetString(redisPool.prefix + "port")         // 端口
+	redisPool.redisConfig.database = viper.GetInt(redisPool.prefix + "database")    // 默认为0
+	redisPool.redisConfig.connTimeout = 3 * time.Second
+	redisPool.redisConfig.readTimeout = 3 * time.Second
+	redisPool.redisConfig.writeTimeout = 3 * time.Second
 
-	var address string = host + ":" + port
+}
 
-	// fmt.Println(address)
+/**
+配置连接redis
+*/
+func (redisPool *redisPoolConfig) redisConn() (redis.Conn, error) {
+
+	var address string = redisPool.redisConfig.host + ":" + redisPool.redisConfig.port
+
 	redisClient, error := redis.Dial(
-		connectionType,
+		redisPool.redisConfig.connectionType,
 		address,
-		redis.DialPassword(password),
-		redis.DialDatabase(database),
+		redis.DialPassword(redisPool.redisConfig.password),
+		redis.DialDatabase(redisPool.redisConfig.database),
 		redis.DialConnectTimeout(3*time.Second),
 		redis.DialReadTimeout(3*time.Second),
 		redis.DialWriteTimeout(3*time.Second),

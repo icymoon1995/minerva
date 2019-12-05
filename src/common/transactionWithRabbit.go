@@ -57,7 +57,10 @@ type transaction struct {
 	ExchangeName string              // 专门处理事务的交换器
 	RouteKey     string              // 专门处理事务的路由key
 	Listener     TransactionListener // 对应的listener
-	NeedTry      bool                // 是否发送try消息 确认存活 默认关闭
+	NeedTry      bool
+	MaxTries     int // 默认最大尝试次数
+	MaxTime      int // 发送消息最大等待时间
+
 }
 
 /**
@@ -65,23 +68,27 @@ rabbitMq 事务类初始化
 */
 func NewTransaction(listener TransactionListener) *transaction {
 
+	rabbitPrefix := RabbitMq.config.prefix
+
 	trans := new(transaction)
 	trans.ExchangeName = viper.GetString(rabbitPrefix + "transaction.exchangeName")
 	trans.RouteKey = viper.GetString(rabbitPrefix + "transaction.routeKey")
 	trans.Listener = listener
 	trans.NeedTry = true
+	trans.MaxTries = 3
+	trans.MaxTime = 700
 
-	var exchangeType string = viper.GetString(rabbitPrefix + "transaction.exchangeType")
-	var queueName string = viper.GetString(rabbitPrefix + "transaction.queueName")
+	// var exchangeType string = viper.GetString(rabbitPrefix + "transaction.exchangeType")
+	// var queueName string = viper.GetString(rabbitPrefix + "transaction.queueName")
 
 	// 创建exchange
-	go exchangeInit(trans.ExchangeName, exchangeType)
+	//	go exchangeInit(trans.ExchangeName, exchangeType)
 
 	// 创建队列
-	go queueInit(queueName, "", "")
+	//	go queueInit(queueName, "", "")
 
 	// 队列绑定
-	go queueBind(queueName, trans.RouteKey, trans.ExchangeName)
+	//	go queueBind(queueName, trans.RouteKey, trans.ExchangeName)
 
 	return trans
 }
@@ -132,7 +139,7 @@ func (trans *transaction) MakeMessageTransaction(trulyMessage *Message) error {
 			if err == nil {
 				break
 			}
-			if tryTime >= MaxTries {
+			if tryTime >= trans.MaxTries {
 				Logger.Println("transactionWithRabbit #MakeMessageTransaction rollback err : ", err.Error())
 				// 其他报警机制
 			}

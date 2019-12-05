@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// log
 var Logger *logrus.Logger
 
 func loggerInit() {

@@ -47,7 +47,7 @@ func registerUser() {
 	// jwt config
 	config := middleware.JWTConfig{
 		Claims:     &controller.JwtCustomClaims{},
-		SigningKey: []byte(common.JWTKey),
+		SigningKey: []byte(common.Global.JWTConfig.Key),
 		// 获取token的标志
 		ContextKey: "jwt_auth",
 	}

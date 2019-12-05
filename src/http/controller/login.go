@@ -3,11 +3,9 @@ package controller
 import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
-	"github.com/spf13/viper"
 	"minerva/src/common"
 	"minerva/src/logic"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -86,14 +84,10 @@ func verify(email string, password string) error {
    JwtCustomClaims 当参数?
 */
 func generateToken(data map[string]interface{}) (string, error) {
-	var env string = common.Enviorment + "."
 	// jwt private_key
-	var jwtKey string = common.JWTKey
+	var jwtKey string = common.Global.JWTConfig.Key
 	// 过期时间 -- 必须转化成time.Duration格式 不然会抛异常
-	var jwtExpire string = viper.GetString(env + "jwt.expire")
-	jwtExpireInt, _ := strconv.ParseInt(jwtExpire, 10, 64)
-	// 目前单位是
-	var d time.Duration = time.Duration(jwtExpireInt) * time.Second
+	var d time.Duration = common.Global.JWTConfig.Expire
 
 	token := jwt.New(jwt.SigningMethodHS256)
 

@@ -22,18 +22,17 @@ func ReceiveMessage() {
 		//	log.Println(err)
 		//}
 
-		messages, err := common.Channel.Consume(
-			common.Queue.Name, // queue
-			"",                // consumer
-			false,             // auto-ack
-			false,             // exclusive
-			false,             // no-local
-			false,             // no-wait
-			nil,               // args
+		messages, err := common.RabbitMq.Channel.Consume(
+			common.RabbitMq.QueueConfig.Queue.Name, // queue
+			"",                                     // consumer
+			false,                                  // auto-ack
+			false,                                  // exclusive
+			false,                                  // no-local
+			false,                                  // no-wait
+			nil,                                    // args
 		)
 
 		for d := range messages {
-			fmt.Println(d)
 			if err != nil {
 				common.Logger.Errorln("MessageHandler #ReceiveMessage error: ", err)
 			}
