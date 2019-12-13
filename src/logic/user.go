@@ -2,6 +2,7 @@ package logic
 
 import (
 	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
 	"minerva/src/common"
 	logic "minerva/src/logic/common"
 	"minerva/src/model"
@@ -45,7 +46,12 @@ func (UserLogic) Index(params map[string]interface{}, ctx echo.Context) map[stri
 	error := common.DB.Limit(perPage, offset).Find(&userList)
 
 	if error != nil {
-		common.Logger.Errorln("logic.user#Index: error:", error)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "logic/user.go",
+			"method": "Index",
+			"type":   "xorm error",
+		}).Errorln(error)
+		//	common.Logger.Errorln("logic.user#Index: error:", error)
 		panic(common.ServerError)
 	}
 
@@ -69,7 +75,12 @@ func (UserLogic) Detail(id int) *model.User {
 	user := &model.User{}
 	_, error := common.DB.Id(id).Get(user)
 	if error != nil {
-		common.Logger.Errorln("logic.user#Detail error :", error)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "logic/user.go",
+			"method": "Detail",
+			"type":   "xorm error",
+		}).Errorln(error)
+		// common.Logger.Errorln("logic.user#Detail error :", error)
 		panic(common.ServerError)
 	}
 	return user

@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
 	"minerva/src/common"
 	"minerva/src/logic"
 	"net/http"
@@ -39,6 +40,12 @@ func (login LoginController) Login(ctx echo.Context) error {
 	// 验证用户名密码
 	error := verify(email, password)
 	if error != nil {
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "http/controller/login.go",
+			"method": "Login",
+			"type":   "verify error",
+		}).Errorln(error.Error())
+		//(message)
 		return echo.NewHTTPError(http.StatusInternalServerError, error.Error())
 	}
 
@@ -52,7 +59,12 @@ func (login LoginController) Login(ctx echo.Context) error {
 	token, error := generateToken(data)
 
 	if error != nil {
-		common.Logger.Errorln("login.go #Login generateToken error :", error)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "http/controller/login.go",
+			"method": "Login",
+			"type":   "generateToken error",
+		}).Errorln(error.Error())
+		//	common.Logger.Errorln("login.go #Login generateToken error :", error)
 		return echo.NewHTTPError(http.StatusInternalServerError, error.Error())
 	}
 
@@ -72,7 +84,12 @@ func verify(email string, password string) error {
 	// 后续考虑第三方认证。。。。todo
 	result, error := authLogic.Verify(email, password)
 	if !result {
-		common.Logger.Errorln("login.go# verify error:", error)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "http/controller/login.go",
+			"method": "verify",
+			"type":   "verify error",
+		}).Errorln(error)
+		// common.Logger.Errorln("login.go# verify error:", error)
 		return error
 	}
 
@@ -108,7 +125,12 @@ func generateToken(data map[string]interface{}) (string, error) {
 	//reallyToken, err := token.SignedString([]byte(jwtKey))
 
 	if err != nil {
-		common.Logger.Errorln("login.go#generateToken error:", err)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "http/controller/login.go",
+			"method": "generateToken",
+			"type":   "generateToken error",
+		}).Errorln(err)
+		//	common.Logger.Errorln("login.go#generateToken error:", err)
 		return "", err
 	}
 

@@ -2,7 +2,7 @@ package logic
 
 import (
 	"encoding/json"
-	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"minerva/src/common"
 	"net/http"
@@ -34,15 +34,32 @@ func ReceiveMessage() {
 
 		for d := range messages {
 			if err != nil {
-				common.Logger.Errorln("MessageHandler #ReceiveMessage error: ", err)
+				common.Logger.WithFields(logrus.Fields{
+					"file":   "logic/common/MessageHandler.go",
+					"method": "ReceiveMessage",
+					"type":   "ReceiveMessage error",
+				}).Errorln(err)
+				//common.Logger.Errorln("MessageHandler #ReceiveMessage error: ", err)
 			}
 
-			common.Logger.Println("MessageHandler #ReceiveMessage start handle message")
+			common.Logger.WithFields(logrus.Fields{
+				"file":   "logic/common/MessageHandler.go",
+				"method": "ReceiveMessage",
+				"type":   "",
+			}).Println("MessageHandler #ReceiveMessage start handle message")
+
+			//			common.Logger.Println("MessageHandler #ReceiveMessage start handle message")
 
 			// 处理逻辑
 			go handle(d)
 
-			common.Logger.Println("end handle message")
+			common.Logger.WithFields(logrus.Fields{
+				"file":   "logic/common/MessageHandler.go",
+				"method": "ReceiveMessage",
+				"type":   "",
+			}).Println("MessageHandler #ReceiveMessage end handle message")
+
+			//	common.Logger.Println("end handle message")
 
 		}
 	}()
@@ -67,12 +84,25 @@ func handle(d amqp.Delivery) {
 	err := json.Unmarshal(d.Body, &message)
 
 	if err != nil {
-		common.Logger.Errorln("MessageHandler #handle json.unmarshal error : ", err)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "logic/common/MessageHandler.go",
+			"method": "handle",
+			"type":   "json.unmarshal error",
+		}).Errorln(err)
+
+		//common.Logger.Errorln("MessageHandler #handle json.unmarshal error : ", err)
 		_ = d.Reject(false)
 	}
 
 	session := common.DB.NewSession()
-	fmt.Println(message.Id, message.Action, message.Content)
+
+	common.Logger.WithFields(logrus.Fields{
+		"file":   "logic/common/MessageHandler.go",
+		"method": "handle",
+		"type":   "",
+	}).Println(message.Id, message.Action, message.Content)
+
+	//fmt.Println(message.Id, message.Action, message.Content)
 
 	redisClient := common.RedisPool.Get()
 	var redisKey string = "message:" + strconv.Itoa(message.Id)
@@ -81,8 +111,14 @@ func handle(d amqp.Delivery) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			common.Logger.Errorln("MessageHandler#handle error : ", err)
 
+			common.Logger.WithFields(logrus.Fields{
+				"file":   "logic/common/MessageHandler.go",
+				"method": "handle",
+				"type":   "handle error",
+			}).Errorln(err)
+
+			//	common.Logger.Errorln("MessageHandler#handle error : ", err)
 			//	_ = session.Rollback()
 
 		}
@@ -96,7 +132,12 @@ func handle(d amqp.Delivery) {
 	// 保证幂等性 用redis或者其他做唯一处理  redis.setnx("message:id")
 	result, err := redisClient.Do("setnx", redisKey, redisValue)
 	if err != nil { // 出现异常 或者 已经在执行 属于重复消息，则拒绝执行
-		common.Logger.Errorln("MessageHandler#handle message repeat :", redisKey)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "logic/common/MessageHandler.go",
+			"method": "handle",
+			"type":   "message warning",
+		}).Warning("repeat:", redisKey)
+		// common.Logger.Errorln("MessageHandler#handle message repeat :", redisKey)
 		//	panic(err)
 		return
 	}
@@ -108,12 +149,23 @@ func handle(d amqp.Delivery) {
 	// 开启mysql事务
 	err = session.Begin()
 	if err != nil {
-		common.Logger.Errorln("MessageHandler#handle begin session error :", err)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "logic/common/MessageHandler.go",
+			"method": "handle",
+			"type":   "begin session error ",
+		}).Errorln(err)
+
+		//common.Logger.Errorln("MessageHandler#handle begin session error :", err)
 		panic(err)
 	}
 
 	// 具体的处理逻辑
-	common.Logger.Println(message.Id, message.Action, message.Content)
+	common.Logger.WithFields(logrus.Fields{
+		"file":   "logic/common/MessageHandler.go",
+		"method": "handle",
+		"type":   "",
+	}).Println(message.Id, message.Action, message.Content)
+	//common.Logger.Println(message.Id, message.Action, message.Content)
 
 	if err != nil {
 		_ = d.Reject(false)
@@ -124,7 +176,12 @@ func handle(d amqp.Delivery) {
 	err = d.Ack(false)
 
 	if err != nil {
-		common.Logger.Errorln("MessageHandler #handle ack error:", err)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "logic/common/MessageHandler.go",
+			"method": "handle",
+			"type":   "ack error ",
+		}).Errorln(err)
+		// common.Logger.Errorln("MessageHandler #handle ack error:", err)
 		panic(err)
 	}
 

@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
 	"minerva/src/common"
 	logic "minerva/src/logic/common"
 	"minerva/src/model"
@@ -28,25 +29,45 @@ func (AuthLogic) Verify(email string, password string) (bool, error) {
 	auth := &model.Auth{}
 	exist, error := common.DB.Where("email = ?", email).Get(auth)
 	if error != nil {
-		common.Logger.Errorln("logic.auth#Verify error :", error)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "logic/auth.go",
+			"method": "Verify",
+			"type":   "verify error ",
+		}).Errorln(error)
+		// common.Logger.Errorln("logic.auth#Verify error :", error)
 		return false, common.ServerError
 	}
 
 	if !exist {
-		common.Logger.Errorln("logic.auth#Verify error : not found email (" + email + ")")
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "logic/auth.go",
+			"method": "Verify",
+			"type":   common.NotFoundEmail,
+		}).Errorln("not found email (" + email + ")")
+		// common.Logger.Errorln("logic.auth#Verify error : not found email (" + email + ")")
 		return false, common.NotFoundEmail
 	}
 
 	// 通过hash加密作对比
 	shaPassword := fmt.Sprintf("%X", sha1.Sum([]byte(password)))
 	if shaPassword != auth.Password {
-		common.Logger.Errorln("logic.auth#Verify error : password error (" + email + ")")
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "logic/auth.go",
+			"method": "Verify",
+			"type":   "password error",
+		}).Errorln("password is wrong")
+		//common.Logger.Errorln("logic.auth#Verify error : password error (" + email + ")")
 		return false, common.PasswordNotCorrect
 	}
 
 	// 账户激活验证
 	if !auth.IsActive() {
-		common.Logger.Errorln("logic.auth#Verify error : account is frozen : (" + email + ")")
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "logic/auth.go",
+			"method": "Verify",
+			"type":   common.AccountFrozen,
+		}).Errorln("account is frozen (" + email + ")")
+		//	common.Logger.Errorln("logic.auth#Verify error : account is frozen : (" + email + ")")
 		return false, common.AccountFrozen
 	}
 

@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
 	"net"
@@ -129,10 +130,19 @@ func (r *rabbit) rabbitConn() {
 	})
 
 	if err != nil {
-		Logger.Fatalf("%s: %s: %s", "common.rabbitMq#rabbitConn", MqErrorFailConnect, err)
+		Logger.WithFields(logrus.Fields{
+			"file":   "common/rabbitMQ.go",
+			"method": "rabbitConn",
+			"error":  MqErrorFailConnect,
+		}).Fatalln(err)
+		// Logger.Fatalf("%s: %s: %s", "common.rabbitMq#rabbitConn", MqErrorFailConnect, err)
 	}
 
-	Logger.Println("rabbit mq connection success")
+	Logger.WithFields(logrus.Fields{
+		"file":   "common/rabbitMQ.go",
+		"method": "rabbitConn",
+		"logger": "rabbit mq",
+	}).Println("connection success")
 }
 
 /**
@@ -143,9 +153,18 @@ func (r *rabbit) channelInit() {
 	r.Channel, err = r.connection.Channel()
 
 	if err != nil {
-		Logger.Fatalf("%s: %s: %s", "common.rabbitMq#channelInit", MqErrorChannelInitFail, err)
+		Logger.WithFields(logrus.Fields{
+			"file":   "common/rabbitMQ.go",
+			"method": "channelInit",
+			"error":  MqErrorChannelInitFail,
+		}).Fatalln(err)
+		//Fatalf("%s: %s: %s", "common.rabbitMq#channelInit", MqErrorChannelInitFail, err)
 	}
-	Logger.Println("rabbit mq channel success")
+	Logger.WithFields(logrus.Fields{
+		"file":   "common/rabbitMQ.go",
+		"method": "channelInit",
+		"logger": "rabbit mq channel",
+	}).Println("connection success")
 
 	// 开启发送者确认模式
 	err = r.Channel.Confirm(false)
@@ -153,7 +172,12 @@ func (r *rabbit) channelInit() {
 	r.Channel.NotifyPublish(r.confirmChan)
 
 	if err != nil {
-		Logger.Fatalf("%s: %s: %s", "common.rabbitMq#channelInit", MqErrorChannelConfirmFail, err)
+		Logger.WithFields(logrus.Fields{
+			"file":   "common/rabbitMQ.go",
+			"method": "channelInit",
+			"error":  MqErrorChannelConfirmFail,
+		}).Fatalln(err)
+		//Fatalf("%s: %s: %s", "common.rabbitMq#channelInit", MqErrorChannelConfirmFail, err)
 	}
 }
 
@@ -182,7 +206,12 @@ func (r *rabbit) queueInit() {
 	)
 
 	if err != nil {
-		Logger.Fatalf("%s: %s: %s ", "common.rabbitMq#queueInit", MqErrorQueueInitFail, err)
+		Logger.WithFields(logrus.Fields{
+			"file":   "common/rabbitMQ.go",
+			"method": "queueInit",
+			"error":  MqErrorQueueInitFail,
+		}).Fatalln(err)
+		//Fatalf("%s: %s: %s ", "common.rabbitMq#queueInit", MqErrorQueueInitFail, err)
 	}
 }
 
@@ -215,7 +244,12 @@ func (r *rabbit) queueBind() {
 			nil,
 		)
 		if err != nil {
-			Logger.Fatalf("%s: %s: %s ", "common.rabbitMq#queueBind", MqErrorQueueBindFail, err)
+			Logger.WithFields(logrus.Fields{
+				"file":   "common/rabbitMQ.go",
+				"method": "queueBind",
+				"error":  MqErrorQueueBindFail,
+			}).Fatalln(err)
+			//Fatalf("%s: %s: %s ", "common.rabbitMq#queueBind", MqErrorQueueBindFail, err)
 		}
 	}
 
@@ -242,7 +276,12 @@ func (r *rabbit) exchangeInit() {
 	)
 
 	if err != nil {
-		Logger.Fatalf("%s: %s: %s", "common.rabbitMq#exchangeInit", MqErrorExchangeInitFail.Error(), err)
+		Logger.WithFields(logrus.Fields{
+			"file":   "common/rabbitMQ.go",
+			"method": "queueBind",
+			"error":  MqErrorExchangeInitFail,
+		}).Fatalln(err)
+		//Fatalf("%s: %s: %s", "common.rabbitMq#exchangeInit", MqErrorExchangeInitFail.Error(), err)
 	}
 
 }
@@ -316,12 +355,22 @@ func (r *rabbit) mqSend(message []byte, exchange string, routeKey string) (*amqp
 
 	// 确认处理
 	case messageConfirmation := <-r.confirmChan: //如果有数据，下面打印。但是有可能ch一直没数据
-		Logger.Printf("%s: %s: %s: %d ", "common.transactionWithRabbit#mqSend", MqMessageSuccess, message, messageConfirmation.DeliveryTag)
+		//	Logger.Printf("%s: %s: %s: %d ", "common.transactionWithRabbit#mqSend", MqMessageSuccess, message, messageConfirmation.DeliveryTag)
+		Logger.WithFields(logrus.Fields{
+			"file":   "common/rabbitMQ.go",
+			"method": "mqSend",
+			"type":   MqMessageSuccess,
+		}).Println(message, messageConfirmation.DeliveryTag)
 		return &messageConfirmation, nil
 
 	// 超时处理
 	case <-time.After(time.Duration(r.maxTime) * time.Millisecond): //上面的ch如果一直没数据会阻塞，那么select也会检测其他case条件，检测到后MaxTime毫秒超时
-		Logger.Printf("%s: %s: %s ", "common.transactionWithRabbit#mqSend", MqErrorSendMessageTimeout.Error(), message)
+		//	Logger.Printf("%s: %s: %s ", "common.transactionWithRabbit#mqSend", MqErrorSendMessageTimeout.Error(), message)
+		Logger.WithFields(logrus.Fields{
+			"file":   "common/rabbitMQ.go",
+			"method": "mqSend",
+			"type":   MqErrorSendMessageTimeout.Error(),
+		}).Println(message)
 		return nil, MqErrorSendMessageTimeout
 	}
 

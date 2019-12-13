@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/garyburd/redigo/redis"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"strings"
 	"time"
@@ -63,7 +64,12 @@ func newRedisPool() {
 		TestOnBorrow: func(c redis.Conn, t time.Time) error { // 连接心跳检测 -- 可能会影响性能
 			_, err := c.Do("PING")
 			if err != nil {
-				Logger.Fatal("redis.go #redisPoolInit err:", err)
+				Logger.WithFields(logrus.Fields{
+					"file":   "common/redis.go",
+					"method": "newRedisPool",
+					"type":   "redisPoolInit error",
+				}).Fatalln(err)
+				//	Logger.Fatal("redis.go #redisPoolInit err:", err)
 			}
 			return err
 		},
@@ -119,7 +125,12 @@ func (redisPool *redisPoolConfig) redisConn() (redis.Conn, error) {
 		redis.DialWriteTimeout(3*time.Second),
 	)
 	if error != nil {
-		Logger.Fatal("redis.go #redisConn error", error)
+		Logger.WithFields(logrus.Fields{
+			"file":   "common/redis.go",
+			"method": "redisConn",
+			"type":   "redisConn error",
+		}).Fatalln(error)
+		// Fatal("redis.go #redisConn error", error)
 	}
 
 	return redisClient, error

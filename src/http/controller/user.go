@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
 	"minerva/src/common"
 	"minerva/src/logic"
 	logicCommon "minerva/src/logic/common"
@@ -45,7 +46,12 @@ func (u UserController) SayHelloByToken(ctx echo.Context) error {
 	users := ctx.Get("jwt_auth").(*jwt.Token)
 	claims := users.Claims.(*JwtCustomClaims)
 
-	common.Logger.Println(claims)
+	common.Logger.WithFields(logrus.Fields{
+		"file":   "http/controller/user.go",
+		"method": "SayHelloByToken",
+		"type":   "",
+	}).Println(claims)
+	// common.Logger.Println(claims)
 	return ctx.String(http.StatusOK, "Welcome "+claims.Email+"!")
 }
 
@@ -60,7 +66,12 @@ func (u UserController) Detail(ctx echo.Context) error {
 	id, error := strconv.Atoi(queryId)
 	// 处理 error
 	if error != nil {
-		common.Logger.Fatal("user #Detail : error: ", error)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "http/controller/user.go",
+			"method": "Detail",
+			"type":   "detail error",
+		}).Errorln(error)
+		//	common.Logger.Fatal("user #Detail : error: ", error)
 	}
 
 	var user *model.User = UserLogic.Detail(id)

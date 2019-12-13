@@ -4,8 +4,12 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/xorm"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
+
+/**
+ */
 
 var db = &dbConfig{}
 
@@ -64,7 +68,12 @@ func newDB() {
 
 	// 测试数据库连接是否 OK
 	if err = DB.Ping(); err != nil {
-		Logger.Fatal("db.go #dbInit ping error:", err)
+
+		Logger.WithFields(logrus.Fields{
+			"file":   "db.go",
+			"method": "newDB",
+			"error":  "ping error",
+		}).Fatalln(err)
 		//log.al("ping db error:", err)
 	}
 

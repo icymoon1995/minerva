@@ -1,6 +1,7 @@
 package common
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -129,7 +130,12 @@ func (trans *transaction) MakeMessageTransaction(trulyMessage *Message) error {
 
 	// 出现异常、 ||  ack = false （拒绝消息)
 	if err != nil || (confirmation != nil && confirmation.Ack == false) {
-		Logger.Println("transactionWithRabbit #MakeMessageTransaction error:", err.Error())
+		Logger.WithFields(logrus.Fields{
+			"file":   "common/transactionWithRabbit.go",
+			"method": "MakeMessageTransaction",
+			"type":   "sendMessage error",
+		}).Errorln(err.Error())
+		//Logger.Println("transactionWithRabbit #MakeMessageTransaction error:", err.Error())
 		// trulyMessage.Action, err.Error())
 		var tryTime int = 0
 		// 回滚操作
@@ -140,7 +146,12 @@ func (trans *transaction) MakeMessageTransaction(trulyMessage *Message) error {
 				break
 			}
 			if tryTime >= trans.MaxTries {
-				Logger.Println("transactionWithRabbit #MakeMessageTransaction rollback err : ", err.Error())
+				Logger.WithFields(logrus.Fields{
+					"file":   "common/transactionWithRabbit.go",
+					"method": "MakeMessageTransaction",
+					"type":   "retry MaxTries",
+				}).Errorln(err.Error())
+				//Logger.Println("transactionWithRabbit #MakeMessageTransaction rollback err : ", err.Error())
 				// 其他报警机制
 			}
 			tryTime++

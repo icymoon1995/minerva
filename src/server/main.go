@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/micro/go-micro/web"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"log"
 	"minerva/src/common"
 	logic "minerva/src/logic/common"
 	"minerva/src/routes"
@@ -15,13 +15,6 @@ func main() {
 	// 部分初始化工作
 	common.Init()
 
-	redis := common.RedisPool.Get()
-	t, err := redis.Do("ping")
-
-	log.Println(t)
-	if err != nil {
-		log.Fatalln(err)
-	}
 	// 注册路由
 	routes.RegisterRoutes()
 
@@ -32,6 +25,7 @@ func main() {
 	startListen()
 }
 
+/*
 type Listener1 struct {
 	Status int
 }
@@ -52,6 +46,7 @@ func (listener *Listener1) Execute() error {
 	listener.Status = 1
 	return nil
 }
+*/
 
 // echo的开启监听
 func startListen() {
@@ -75,12 +70,21 @@ func startListen() {
 	err := service.Init()
 
 	if err != nil {
-		common.Logger.Fatal("main.go # startListen service init error : ", err)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "server/main.go",
+			"method": "startListen",
+			"type":   "service init error ",
+		}).Fatalln(err)
 	}
 
 	// run service
 	if err := service.Run(); err != nil {
-		common.Logger.Fatal(err)
+		common.Logger.WithFields(logrus.Fields{
+			"file":   "server/main.go",
+			"method": "startListen",
+			"type":   "service run error ",
+		}).Fatalln(err)
+		//	common.Logger.Fatal(err)
 	}
 
 	// echo的启动方式
